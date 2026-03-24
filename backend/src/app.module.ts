@@ -55,3 +55,14 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
   exports: [PrismaService],
 })
 export class AppModule {}
+```
+
+לחץ **Commit changes**
+
+---
+
+## תיקון 2 — הוסף `backend/src/database/database.module.ts`
+
+**שם:**
+```
+backend/src/database/database.module.ts

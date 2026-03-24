@@ -278,4 +278,163 @@ model Order {
   cargoVolumeCbm             Float?
   cargoIsFragile             Boolean          @default(false)
   cargoIsHazmat              Boolean          @default(false)
-  cargoRequiresRefr
+  cargoRequiresRefrigeration Boolean          @default(false)
+  cargoEstimatedValue        Float?
+  cargoNotes                 String?
+  vehicleTypeRequired        VehicleType
+  featuresRequired           VehicleFeature[]
+  scheduledAt                DateTime
+  distanceKm                 Float
+  estimatedDurationMin       Int
+  basePrice                  Float
+  distanceFee                Float
+  featuresSurcharge          Float            @default(0)
+  paymentTermsSurcharge      Float            @default(0)
+  platformFee                Float
+  insuranceFee               Float            @default(0)
+  vatAmount                  Float
+  total                      Float
+  driverPayout               Float
+  cancelledReason            String?
+  cancelledBy                UserRole?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+
+  business  Business         @relation(fields: [businessId], references: [id])
+  driver    Driver?          @relation(fields: [driverId], references: [id])
+  vehicle   Vehicle?         @relation(fields: [vehicleId], references: [id])
+  payment   Payment?
+  events    OrderEvent[]
+  pod       ProofOfDelivery?
+  insurance OrderInsurance?
+  reviews   Review[]
+  dispute   Dispute?
+
+  @@index([businessId])
+  @@index([driverId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("orders")
+}
+
+model OrderEvent {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  lat       Float?
+  lng       Float?
+  note      String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_events")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  status        PaymentStatus @default(PENDING)
+  method        PaymentMethod
+  terms         PaymentTerms  @default(IMMEDIATE)
+  amount        Float
+  platformFee   Float
+  driverPayout  Float
+  dueDate       DateTime?
+  paidAt        DateTime?
+  releasedAt    DateTime?
+  transactionId String?
+  factoring     Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([status])
+  @@index([dueDate])
+  @@map("payments")
+}
+
+model ProofOfDelivery {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  photos        String[]
+  signatureUrl  String
+  signedBy      String
+  recipientName String
+  notes         String?
+  signedAt      DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("proof_of_deliveries")
+}
+
+model OrderInsurance {
+  id             String   @id @default(uuid())
+  orderId        String   @unique
+  provider       String
+  policyNumber   String
+  coverageAmount Float
+  premium        Float
+  createdAt      DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("order_insurances")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  orderId   String
+  driverId  String
+  fromRole  UserRole
+  rating    Float
+  comment   String?
+  createdAt DateTime @default(now())
+
+  order  Order  @relation(fields: [orderId], references: [id])
+  driver Driver @relation("DriverReviews", fields: [driverId], references: [id])
+
+  @@unique([orderId, fromRole])
+  @@index([driverId])
+  @@map("reviews")
+}
+
+model Dispute {
+  id            String        @id @default(uuid())
+  orderId       String        @unique
+  openedBy      UserRole
+  status        DisputeStatus @default(OPEN)
+  reason        String
+  description   String
+  evidenceUrls  String[]
+  claimedAmount Float?
+  resolution    String?
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([status])
+  @@map("disputes")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}

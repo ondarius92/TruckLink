@@ -10,21 +10,3 @@
     "restartPolicyMaxRetries": 3
   }
 }
-```
-
-לחץ **Commit changes**
-
----
-
-## תיקון 3 — הוסף Variables ב-Railway
-
-לחץ על **Variables** ← **Add Variable** והוסף:
-```
-DATABASE_URL        = (Railway יצור אוטומטית אחרי שתוסיף PostgreSQL)
-JWT_SECRET          = trucklink-super-secret-2024
-JWT_REFRESH_SECRET  = trucklink-refresh-secret-2024
-NODE_ENV            = production
-FRONTEND_URL        = https://trucklink.vercel.app
-PORT                = 3000
-PLATFORM_FEE_PERCENT = 12
-VAT_PERCENT         = 18

@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUSINESS
+  DRIVER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum VehicleType {
+  VAN
+  SMALL_TRUCK
+  MEDIUM_TRUCK
+  LARGE_TRUCK
+  SEMI_TRUCK
+}
+
+enum VehicleFeature {
+  REFRIGERATED
+  CRANE
+  HAZMAT
+  FLATBED
+  TAIL_LIFT
+}
+
+enum OrderStatus {
+  PENDING
+  MATCHING
+  ACCEPTED
+  PICKUP
+  IN_TRANSIT
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  CASH
+}
+
+enum PaymentTerms {
+  IMMEDIATE
+  NET_30
+  NET_60
+  NET_90
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_BUSINESS
+  RESOLVED_DRIVER
+  CLOSED
+}
+
+enum DocumentType {
+  LICENSE
+  VEHICLE_REG
+  INSURANCE
+  ID
+  ADR
+}
+
+enum NotificationType {
+  NEW_ORDER
+  ORDER_ACCEPTED
+  DRIVER_ARRIVING
+  ORDER_PICKED_UP
+  ORDER_DELIVERED
+  PAYMENT_RELEASED
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  DOCUMENT_EXPIRING
+}
+
+model User {
+  id           String     @id @default(uuid())
+  role         UserRole
+  status       UserStatus @default(PENDING)
+  firstName    String
+  lastName     String
+  phone        String     @unique
+  email        String     @unique
+  avatarUrl    String?
+  fcmToken     String?
+  lastSeenAt   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  business      Business?
+  driver        Driver?
+  notifications Notification[]
+  otpCodes      OtpCode[]
+  refreshTokens RefreshToken[]
+
+  @@index([phone])
+  @@index([email])
+  @@map("users")
+}
+
+model OtpCode {
+  id        String    @id @default(uuid())
+  userId    String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("otp_codes")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model Business {
+  id             String       @id @default(uuid())
+  userId         String       @unique
+  companyName    String
+  businessNumber String       @unique
+  vatNumber      String?
+  industry       String
+  paymentTerms   PaymentTerms @default(IMMEDIATE)
+  creditLimit    Float?
+  rating         Float        @default(0)
+  totalOrders    Int          @default(0)
+  isVerified     Boolean      @default(false)
+  contactPerson  String
+  street         String
+  city           String
+  zipCode        String?
+  country        String       @default("IL")
+  lat            Float
+  lng            Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[]
+
+  @@index([businessNumber])
+  @@index([city])
+  @@map("businesses")
+}
+
+model Driver {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  licenseNumber  String    @unique
+  licenseTypes   String[]
+  licenseExpiry  DateTime
+  idNumber       String    @unique
+  rating         Float     @default(0)
+  totalTrips     Int       @default(0)
+  totalEarnings  Float     @default(0)
+  isOnline       Boolean   @default(false)
+  currentLat     Float?
+  currentLng     Float?
+  lastLocationAt DateTime?
+  bankName       String?
+  branchNumber   String?
+  accountNumber  String?
+  accountHolder  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id])
+  vehicles  Vehicle[]
+  documents DriverDocument[]
+  orders    Order[]
+  reviews   Review[]         @relation("DriverReviews")
+
+  @@index([isOnline])
+  @@index([currentLat, currentLng])
+  @@map("drivers")
+}
+
+model DriverDocument {
+  id         String       @id @default(uuid())
+  driverId   String
+  type       DocumentType
+  fileUrl    String
+  expiryDate DateTime?
+  isVerified Boolean      @default(false)
+  verifiedAt DateTime?
+  verifiedBy String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  driver Driver @relation(fields: [driverId], references: [id])
+
+  @@index([driverId, type])
+  @@map("driver_documents")
+}
+
+model Vehicle {
+  id              String           @id @default(uuid())
+  driverId        String
+  type            VehicleType
+  features        VehicleFeature[]
+  plateNumber     String           @unique
+  make            String
+  model           String
+  year            Int
+  maxWeightKg     Float
+  maxVolumeCbm    Float
+  insuranceExpiry DateTime
+  testExpiry      DateTime
+  photos          String[]
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  driver Driver  @relation(fields: [driverId], references: [id])
+  orders Order[]
+
+  @@index([driverId])
+  @@index([type])
+  @@map("vehicles")
+}
+
+model Order {
+  id                         String           @id @default(uuid())
+  orderNumber                String           @unique
+  status                     OrderStatus      @default(PENDING)
+  businessId                 String
+  driverId                   String?
+  vehicleId                  String?
+  pickupStreet               String
+  pickupCity                 String
+  pickupLat                  Float
+  pickupLng                  Float
+  pickupNotes                String?
+  dropoffStreet              String
+  dropoffCity                String
+  dropoffLat                 Float
+  dropoffLng                 Float
+  dropoffNotes               String?
+  cargoDescription           String
+  cargoWeightKg              Float
+  cargoVolumeCbm             Float?
+  cargoIsFragile             Boolean          @default(false)
+  cargoIsHazmat              Boolean          @default(false)
+  cargoRequiresRefr

@@ -106,14 +106,18 @@ export class DisputesService {
     });
     if (!dispute) throw new NotFoundException('מחלוקת לא נמצאה');
 
-    if (dispute.status === 'CLOSED' ||
-        dispute.status === 'RESOLVED_BUSINESS' ||
-        dispute.status === 'RESOLVED_DRIVER') {
+    if (
+      dispute.status === 'CLOSED' ||
+      dispute.status === 'RESOLVED_BUSINESS' ||
+      dispute.status === 'RESOLVED_DRIVER'
+    ) {
       throw new BadRequestException('המחלוקת כבר נסגרה');
     }
 
     const status =
-      favor === 'BUSINESS' ? 'RESOLVED_BUSINESS' : 'RESOLVED_DRIVER';
+      favor === 'BUSINESS'
+        ? 'RESOLVED_BUSINESS'
+        : 'RESOLVED_DRIVER';
 
     await this.prisma.$transaction(async (tx) => {
       await tx.dispute.update({

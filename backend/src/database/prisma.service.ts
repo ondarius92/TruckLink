@@ -15,39 +15,16 @@ export class PrismaService
 
   constructor() {
     super({
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'stdout', level: 'info' },
-        { emit: 'stdout', level: 'warn' },
-        { emit: 'stdout', level: 'error' },
-      ],
+      log: ['warn', 'error'],
     });
   }
 
   async onModuleInit() {
     await this.$connect();
-    this.logger.log('Database connected ✅');
+    this.logger.log('Database connected');
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
-    this.logger.log('Database disconnected');
-  }
-
-  async cleanDatabase() {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('לא ניתן לנקות DB בסביבת production');
-    }
-    const tablenames = await this.$queryRaw
-      Array<{ tablename: string }>
-    >`SELECT tablename FROM pg_tables WHERE schemaname='public'`;
-
-    for (const { tablename } of tablenames) {
-      if (tablename !== '_prisma_migrations') {
-        await this.$executeRawUnsafe(
-          `TRUNCATE TABLE "public"."${tablename}" CASCADE;`,
-        );
-      }
-    }
   }
 }

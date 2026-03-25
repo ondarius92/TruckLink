@@ -16,6 +16,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { DisputesModule } from './modules/disputes/disputes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
       isGlobal: true,
       load: [appConfig, jwtConfig, awsConfig],
     }),
+    DatabaseModule,
     AuthModule,
     UsersModule,
     OrdersModule,
@@ -55,14 +57,3 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
   exports: [PrismaService],
 })
 export class AppModule {}
-```
-
-לחץ **Commit changes**
-
----
-
-## תיקון 2 — הוסף `backend/src/database/database.module.ts`
-
-**שם:**
-```
-backend/src/database/database.module.ts
